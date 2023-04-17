@@ -1,0 +1,54 @@
+---
+
+- hosts: all
+  gather_facts: false
+  become: true
+  tasks:
+
+  - name: Read IDs from csv file
+    read_csv:
+      path: ./id_list.csv
+    register: id_list
+    delegate_to: localhost
+  
+  - name: Show the user ID list for debugging
+    debug:
+      var: id_list.list
+
+  - name: extract Username from all dictionaries
+    debug:
+      msg: "{{ item.ID }}"
+    loop: "{{ id_list.list }}"
+
+  - name: Extract group
+    debug:
+      msg: "{{ item.group }}"
+    loop: "{{ id_list.list }}"
+
+  - name: Extract name
+    debug:
+      msg: "{{ item.name }}"
+    loop: "{{ id_list.list }}"
+
+  - name: Create diákbogyó group
+    ansible.builtin.group:
+      name: diakbogyo
+      state: present
+
+  - name: Remove ID's if they already exist
+    ansible.builtin.user:
+      name: "{{ item.ID }}"
+      state: absent
+    loop: "{{ id_list.list }}"
+
+  - name: Register diákbogyó IDs
+    ansible.builtin.user:
+      name: "{{ item.ID }}"
+      comment: "{{ item.name }}"
+      groups: "{{ item.group }}"
+      append: false
+      password: "{{ 'NASlab007' | password_hash('sha512') }}"
+    loop: "{{ id_list.list }}"
+
+
+...
